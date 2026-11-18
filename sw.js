@@ -1,5 +1,5 @@
 /* Ajak — service worker (offline-first shell) */
-const CACHE = 'diary-v3';
+const CACHE = 'diary-v4';
 const SHELL = [
   './',
   './index.html',
