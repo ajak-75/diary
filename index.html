@@ -10,12 +10,14 @@
 <meta name="format-detection" content="telephone=no">
 
 <!-- 보안: Referer에는 출처만 남기고, 페이지는 자기 파일·자기 사진/영상·번역 API 외에는
-     아무것도 불러오지 못한다(인라인 스크립트 금지 = script-src 'self'). -->
+     아무것도 불러오지 못한다(인라인 스크립트 금지 = script-src 'self').
+     frame-ancestors는 일부러 넣지 않았다 — meta에서는 무시되고 콘솔 오류만 남으므로,
+     프레임 악용은 boot.js의 frameGuard가 막는다. -->
 <meta name="referrer" content="strict-origin-when-cross-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self'; connect-src 'self' data: blob: https://translate.googleapis.com https://clients5.google.com https://translate.astian.org; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self'; connect-src 'self' data: blob: https://translate.googleapis.com https://clients5.google.com https://translate.astian.org; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 
 <!-- 기기 언어를 첫 페인트 전에 적용한다(파일로 분리해 CSP의 인라인 스크립트 금지를 지킨다) -->
-<script src="./boot.js?v=1"></script>
+<script src="./boot.js?v=2"></script>
 
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/favicon-32.png?v=3" sizes="32x32" type="image/png">

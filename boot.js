@@ -3,6 +3,12 @@
    헤드에서 블로킹으로 불러오므로 화면이 그려지기 전에 실행된다.
    (index.html 안에 두지 않고 파일로 나눈 이유: CSP가 인라인 스크립트를 막기 때문) */
 (function () {
+  /* 프레임 악용 방지: 남의 사이트 프레임 안에서는 이 앱을 띄우지 않는다 */
+  if (window.top !== window.self) {
+    try {
+      if (window.top.location.origin !== window.location.origin) window.top.location.href = window.location.href;
+    } catch (e) { document.documentElement.style.display = 'none'; }
+  }
   try {
     var q = (new URLSearchParams(location.search).get('lang') || '').toLowerCase().replace('_', '-');
     var raw = q || (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
