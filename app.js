@@ -901,6 +901,9 @@ function mediaHTML(p){
   return '<div class="post-photos" data-n="' + n + '" data-vids="' + vids + '">' + inner + '</div>';
 }
 
+/* 댓글창은 한 번 연 글에서 계속 열려 있게 한다(댓글을 쓰고 나서 다시 눌러야 하는 일이 없도록). */
+const openComments = new Set();
+
 function commentsHTML(p){
   if (!p.comments.length) return '';
   return p.comments.map(c => (
@@ -1064,7 +1067,7 @@ function postHTML(p){
     +   '<button type="button" class="act" data-act="delete" aria-label="삭제" title="삭제">' + ICO.trash + '</button>'
     +   '</span>' : '')
     + '</div>'
-    + '<div class="comments" hidden>'
+    + '<div class="comments"' + (openComments.has(p.id) ? '' : ' hidden') + '>'
     +   commentsHTML(p)
     +   '<form class="comment-form" data-cform="' + escAttr(p.id) + '">'
     +     avatarHTML({ nick: state.me.nick, handle: state.me.handle, mine: true }, 28)
@@ -1105,21 +1108,21 @@ function renderMain(){
   }
   if (v === 'search') {
     const tags = topTags();
-    const note = (state.filterTag || state.searchQuery)
-      ? '<div class="filter-note"><span>' + esc(t('searchingFor')) + ' <b>' + esc(state.filterTag ? '#' + state.filterTag : state.searchQuery) + '</b></span>'
-        + '<button type="button" id="clearFilter">' + esc(t('clearFilter')) + '</button></div>'
-      : '';
-    const found = visiblePosts();
     main.innerHTML =
       '<div class="view-head"><h2 class="view-title">' + esc(t('searchTitle')) + '</h2></div>'
       + '<div class="search-wrap"><input id="searchInput" class="search-input" type="search" placeholder="' + escAttr(t('searchPlaceholder')) + '" value="' + escAttr(state.searchQuery || '') + '"></div>'
       + '<div class="tag-cloud-head">' + esc(t('popTags')) + '</div>'
       + '<div class="tag-cloud">' + tags.map(tg => tagChipHTML(tg.tag, tg.count, tg.label)).join('') + '</div>'
-      + note
-      + (found.length ? found.map(postHTML).join('') : emptyHTML(state.searchQuery || state.filterTag ? t('emptySearch') : t('emptyFeed')));
+      + '<div id="searchResults">' + searchResultsHTML() + '</div>';
+    /* 결과 목록만 다시 그린다: 입력창은 그대로 두어 한글 조합 중에도 커서가 흔들리지 않게 */
     const si = $('#searchInput');
     if (si) {
-      si.addEventListener('input', () => { state.searchQuery = si.value; save(state); refreshResultsKeepFocus(); });
+      si.addEventListener('input', () => {
+        state.searchQuery = si.value;
+        save(state);
+        const box = $('#searchResults');
+        if (box) box.innerHTML = searchResultsHTML();
+      });
     }
     return;
   }
@@ -1161,15 +1164,16 @@ function renderMain(){
   }
 }
 
-function refreshResultsKeepFocus(){
-  if (currentView !== 'search') return renderMain();
-  const pos = window.scrollY;
-  const hadFocus = document.activeElement === $('#searchInput');
-  const val = $('#searchInput') ? $('#searchInput').value : state.searchQuery;
-  renderMain();
-  const si = $('#searchInput');
-  if (si) { si.value = val; if (hadFocus) { si.focus(); si.setSelectionRange(val.length, val.length); } }
-  window.scrollTo(0, pos);
+/* 검색 결과 영역만 새로 그린다 */
+function searchResultsHTML(){
+  const found = visiblePosts();
+  const note = (state.filterTag || state.searchQuery)
+    ? '<div class="filter-note"><span>' + esc(t('searchingFor')) + ' <b>' + esc(state.filterTag ? '#' + state.filterTag : state.searchQuery) + '</b></span>'
+      + '<button type="button" id="clearFilter">' + esc(t('clearFilter')) + '</button></div>'
+    : '';
+  return note + (found.length
+    ? found.map(postHTML).join('')
+    : emptyHTML(state.searchQuery || state.filterTag ? t('emptySearch') : t('emptyFeed')));
 }
 
 /* 인기 태그: 실제로 쓴 태그를 세어 많은 순서로 8개. 같은 수면 최근 사용이 앞선다.
@@ -1230,7 +1234,8 @@ function onMainClick(e){
   if (chip) {
     state.searchQuery = '';
     state.filterTag = chip.dataset.tag;
-    go('search');
+    save(state);
+    if (currentView === 'search') render(); else go('search');
     return;
   }
 
@@ -1258,7 +1263,14 @@ function onMainClick(e){
     else if (act === 'repost') { p.reposted = !p.reposted; p.reposts += p.reposted ? 1 : -1; if (p.reposts < 0) p.reposts = 0; save(state); render(); toast(t(p.reposted ? 'reposted' : 'unreposted')); }
     else if (act === 'share') { sharePost(p); }
     else if (act === 'edit') { openEditPost(p); }
-    else if (act === 'comment') { const box = post.querySelector('.comments'); box.hidden = false; const inp = box.querySelector('.comment-input'); inp.focus(); box.scrollIntoView({ block: 'nearest' }); }
+    else if (act === 'comment') {
+      openComments.add(p.id);
+      const box = post.querySelector('.comments');
+      box.hidden = false;
+      const inp = box.querySelector('.comment-input');
+      inp.focus();
+      box.scrollIntoView({ block: 'nearest' });
+    }
     else if (act === 'delete') {
       if (confirm(t('confirmDelete'))) {
         (p.media || []).forEach(m => {
@@ -1267,6 +1279,7 @@ function onMainClick(e){
           mediaURLs.delete(m.id);
         });
         delete trState[p.id];
+        openComments.delete(p.id);
         state.diaries = state.diaries.filter(x => x.id !== p.id);
         save(state); render(); toast(t('deleted'));
       }
