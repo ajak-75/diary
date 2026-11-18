@@ -1,5 +1,5 @@
-/* 다이어리 — service worker (offline-first shell) */
-const CACHE = 'diary-v1';
+/* Ajak — service worker (offline-first shell) */
+const CACHE = 'diary-v2';
 const SHELL = [
   './',
   './index.html',

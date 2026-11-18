@@ -67,7 +67,7 @@ svg { display: block; }
 .brand { display: flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; min-width: 0; }
 .brand-mark { width: 30px; height: 30px; flex: none; color: var(--ink); }
 .brand-copy { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
-.brand-title { font-size: 17.5px; font-weight: 800; letter-spacing: -0.03em; }
+.brand-title { font-size: 19.5px; font-weight: 800; letter-spacing: -0.04em; }
 .brand-sub { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- post ---------- */

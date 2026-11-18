@@ -1,5 +1,5 @@
-/* 다이어리 — app.js
-   일상과 생각을 가볍게 나누는 스레드형 한국어 다이어리.
+/* Ajak — app.js
+   일상과 생각을 가볍게 나누는 스레드형 한국어 다이어리 앱.
    글은 localStorage(diary.v1)에, 사진·영상은 IndexedDB(diary.media)에 저장한다. */
 
 (() => {
@@ -777,7 +777,7 @@ function toast(msg){
 function postLink(p){ return PAGE_URL + '#d=' + p.id; }
 
 async function sharePost(p){
-  const data = { title: '다이어리', text: p.body.slice(0, 120), url: postLink(p) };
+  const data = { title: 'Ajak', text: p.body.slice(0, 120), url: postLink(p) };
   if (navigator.share) {
     try { await navigator.share(data); toast(t('sharedTo')); return; }
     catch(e) { if (e && e.name === 'AbortError') return; }
