@@ -242,6 +242,11 @@ svg { display: block; }
   gap: 8px; padding: 10px 14px 8px; border-bottom: 1px solid var(--line); flex: none;
 }
 .sheet-head .text-btn { justify-self: start; }
+.sheet-head .text-btn:last-child { justify-self: end; }
+/* 커뮤니티 약속: 왼쪽 여백과 닫기 버튼 폭을 맞춰 제목을 가운데에 */
+.sheet-promise .sheet-head { display: flex; align-items: center; gap: 8px; }
+.sheet-promise .sheet-title { flex: 1; text-align: center; }
+.sheet-promise .sheet-pad { width: 44px; }
 .sheet-head .pill { justify-self: end; }
 .sheet-title { margin: 0; font-size: 15.5px; font-weight: 700; text-align: center; letter-spacing: -0.01em; }
 .sheet-pad { width: 1px; }
