@@ -136,23 +136,34 @@ async function trBatch(list, target){
 
 async function rtTranslateDict(){
   const base = BUILTIN_I18N.en || {};
-  const keys = Object.keys(base).filter(k => typeof base[k] === 'string');
+  /* 브랜드 라벨은 번역하지 않는다('Ajak'은 어느 언어에서도 영문 그대로) */
+  const PINNED = { brandAria: 1 };
+  const keys = Object.keys(base).filter(k => typeof base[k] === 'string' && !PINNED[k]);
   const out = {};
+  keys.forEach(k => { if (PINNED[k]) out[k] = base[k]; });
   const CHUNK = 8;
-  for (let i = 0; i < keys.length; i += CHUNK) {
-    const chunk = keys.slice(i, i + CHUNK);
-    let res = null;
-    try { res = await trBatch(chunk.map(k => base[k]), LANG); } catch (e) { res = null; }
-    chunk.forEach((k, j) => {
-      const r = res ? res[j] : null;
-      let v = (typeof r === 'string' && r.trim()) ? r : null;
-      /* 자리표시자가 사라진 번역은 버리고 영어 원문을 쓴다 */
-      if (v) {
-        ['{n}', '{MAX_MEDIA}'].forEach(tok => {
-          if (base[k].indexOf(tok) >= 0 && v.indexOf(tok) < 0) v = null;
-        });
-      }
-      out[k] = v || base[k];
+  const chunks = [];
+  for (let i = 0; i < keys.length; i += CHUNK) chunks.push(keys.slice(i, i + CHUNK));
+  /* 요청은 4개씩 동시에 보낸다 — 첫 방문에 기다리는 시간을 줄인다 */
+  const CONC = 4;
+  for (let c = 0; c < chunks.length; c += CONC) {
+    const wave = chunks.slice(c, c + CONC);
+    const results = await Promise.all(wave.map(chunk =>
+      trBatch(chunk.map(k => base[k]), LANG).catch(() => null)
+    ));
+    wave.forEach((chunk, w) => {
+      const res = results[w];
+      chunk.forEach((k, j) => {
+        const r = res ? res[j] : null;
+        let v = (typeof r === 'string' && r.trim()) ? r : null;
+        /* 자리표시자가 사라진 번역은 버리고 영어 원문을 쓴다 */
+        if (v) {
+          ['{n}', '{MAX_MEDIA}'].forEach(tok => {
+            if (base[k].indexOf(tok) >= 0 && v.indexOf(tok) < 0) v = null;
+          });
+        }
+        out[k] = v || base[k];
+      });
     });
   }
   const tags = Array.isArray(base.defaultTags) ? base.defaultTags : [];
