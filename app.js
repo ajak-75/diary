@@ -1046,7 +1046,6 @@ function postHTML(p){
     +   '<div class="post-headline">'
     +     '<div class="byline">'
     +       '<span class="byline-name">' + esc(p.nick) + '</span>'
-    +       '<span class="byline-handle">' + esc(p.handle) + '</span>'
     +       '<span class="dot">\u00b7</span>'
     +       '<span class="byline-time" data-ts="' + p.ts + '">' + timeAgo(p.ts) + '</span>'
     +       (p.editedAt ? '<span class="edited-mark">' + esc(t('edited')) + '</span>' : '')
