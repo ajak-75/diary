@@ -1,5 +1,6 @@
 /* Ajak — app.js
-   일상과 생각을 가볍게 나누는 스레드형 한국어 다이어리 앱.
+   일상과 생각을 가볍게 나누는 스레드형 다이어리 앱. UI는 접속한 기기 언어를 자동으로 따른다
+   (사전은 i18n.js, 내장하지 않은 언어는 실행 중 번역·캐시한다).
    글은 localStorage(diary.v1)에, 사진·영상은 IndexedDB(diary.media)에 저장한다. */
 
 (() => {
@@ -20,66 +21,170 @@ const DB_NAME    = 'diary.media';
 const DB_STORE   = 'media';
 const AVATAR_DEFAULT = './icons/avatar-default.svg';
 
-/* ---------- 문구 ---------- */
-const S = {
-  tagline: '일상과 생각을 가볍게 나누는 공간',
-  meRole: '나의 기록',
-  home: '홈', search: '검색', post: '글쓰기', mydiary: '내 프로필',
-  translate: '번역 보기', seeOriginal: '원문 보기', translatedBy: '자동 번역',
-  translating: '번역 중…', translateFail: '번역을 불러오지 못했어요 · 다시 눌러 주세요',
-  translateSame: '이미 같은 언어로 쓰인 글이에요',
-  newPost: '새 글', cancel: '취소', publish: '게시', posted: '게시했어요',
-  editPost: '글 수정', save: '저장', savedPost: '수정했어요', edited: '(수정됨)', edit: '수정',
-  bodyPlaceholder: '오늘 어떤 하루였나요?', tagPlaceholder: '#일상 #오늘',
-  media: '사진·영상', photoHint: `사진·영상 ${MAX_MEDIA}개까지 (영상 15초·15MB 이내)`,
-  tooManyPhotos: `사진·영상은 ${MAX_MEDIA}개까지 올릴 수 있어요`,
-  videoTooBig: '영상은 15MB까지 올릴 수 있어요', videoTooLong: '영상은 15초 이내로 올려 주세요',
-  videoBad: '영상을 불러오지 못했어요', photoBad: '사진을 불러오지 못했어요',
-  composeHint: '글은 이 기기에 저장돼요.',
-  comment: '댓글', commentPlaceholder: '다정하게 답글을 남겨 보세요…', send: '보내기',
-  like: '좋아요', repost: '리포스트', share: '공유',
-  copied: '링크를 복사했어요', sharedTo: '공유했어요', shareFail: '공유할 수 없어요',
-  reposted: '리포스트했어요', unreposted: '리포스트를 취소했어요',
-  deleted: '삭제했어요', confirmDelete: '이 글을 삭제할까요?',
-  myPosts: '내 글', myLikes: '좋아요',
-  myTitle: '내 프로필', searchTitle: '검색', searchPlaceholder: '본문이나 #태그 검색',
-  popTags: '인기 태그', clearFilter: '전체 보기', searchingFor: '표시 중',
-  emptyFeed: '아직 글이 없어요.', emptySearch: '검색 결과가 없어요.',
-  emptyMine: '아직 쓴 글이 없어요. 첫 글을 남겨 보세요.', emptyLikes: '아직 좋아요한 글이 없어요.',
-  emptyHomeTitle: '아직 비어 있는 피드',
-  emptyHomeSub: '일상과 생각을 가볍게 나누는 공간이에요. 오늘의 첫 글을 남겨 보세요.',
-  emptyHomeCta: '첫 글 쓰기',
-  posts: '글', likes: '좋아요',
-  offline: '오프라인 — 저장된 글을 보여드려요',
-  deleteComment: '삭제',
-  needText: '내용을 먼저 써 주세요',
-  close: '닫기',
-  promiseBtn: '커뮤니티 약속',
-  promiseBtnSub: '함께 지키는 다섯 가지 약속',
-  promiseTitle: '📜 커뮤니티 약속',
-  promiseSub: '누구나 편하게 머무는 공간을 위한 다섯 가지 약속이에요.',
-  promiseFoot: '약속을 어긴 글은 경고 안내 뒤에 게시되지 않아요.',
-  p1t: '서로 존중하기', p1d: '욕설·비방·혐오 표현은 쓰지 않아요.',
-  p2t: '광고·스팸 금지', p2d: '무단 광고나 스팸, 수상한 링크는 올리지 않아요.',
-  p3t: '사진·저작권 존중', p3d: '다른 사람의 사진이나 작품을 허락 없이 가져오지 않아요.',
-  p4t: '개인정보 지키기', p4d: '전화번호·주소·계좌 같은 개인정보는 남기지 않아요.',
-  p5t: '다정하게 나누기', p5d: '서로의 하루를 다정한 마음으로 나눠요.',
-  warnTitle: '잠깐, 커뮤니티 약속을 확인해 주세요',
-  warnWord: '욕설·비방·도박·성인·스팸으로 보이는 표현이 들어 있어요.',
-  warnLink: '외부 링크나 스팸 주소는 여기에 올릴 수 없어요.',
-  warnPhone: '전화번호 같은 개인 연락처가 들어 있어요.',
-  warnEdit: '표현을 고치면 바로 게시할 수 있어요.',
-  profileEdit: '프로필 편집', profilePhoto: '프로필 사진', profilePhotoPick: '사진 선택',
-  profilePhotoReset: '기본 이미지로 되돌리기',
-  profileNickL: '닉네임', profileNickPh: '20자까지 쓸 수 있어요',
-  profileBioL: '한 줄 소개', profileBioPh: '나를 소개하는 한 줄, 80자까지',
-  profileHint: '사진·닉네임·소개는 내 글과 댓글에 함께 보여요. 이 기기에 저장돼요.',
-  profileNeedNick: '닉네임을 먼저 적어 주세요',
-  profileSaved: '프로필을 저장했어요',
-  profilePhotoBad: '사진을 불러오지 못했어요',
+/* ---------- 문구 · 다국어 ----------
+   접속한 기기의 언어(navigator.languages[0] || navigator.language)를 읽어 UI를 그 언어로 띄운다.
+   상단에 언어 선택 바는 두지 않는다 — 검수용으로 ?lang=fr 같은 쿼리 오버라이드만 지원한다.
+   · i18n.js 에 15개 언어 사전을 내장한다(ko·en·ja·zh·zh-TW·es·fr·de·pt·it·ru·id·vi·th·ar).
+   · 그 밖의 언어 코드(nl·pl·hi·tr·uk …)는 Google Translate 공개 API로 UI 문구를 한 번 번역해
+     localStorage('ajak_ui_i18n_{lang}')에 캐시하고 그대로 쓴다. 번역이 실패하면 영어로 받쳐 둔다.
+   · 브랜드 'Ajak'은 어느 언어에서도 영문 그대로 둔다. {MAX_MEDIA}·{n}은 런타임에 채운다. */
+const BUILTIN_I18N = (typeof window !== 'undefined' && window.AJAK_I18N) || {};
+const UI_I18N_VERSION = '2026-11-18';
+const RTL_LANGS = ['ar', 'he', 'fa', 'ur', 'yi', 'dv', 'ps', 'ckb', 'sd', 'ug'];
+
+const LOCALES = {
+  ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', zh: 'zh-CN', 'zh-tw': 'zh-TW', es: 'es-ES',
+  fr: 'fr-FR', de: 'de-DE', pt: 'pt-BR', it: 'it-IT', ru: 'ru-RU', id: 'id-ID',
+  vi: 'vi-VN', th: 'th-TH', ar: 'ar',
 };
 
-const t = (k) => (k in S ? S[k] : k);
+/* 기기 언어 → 사전 키. 중국어는 간체/번체를 나누고, 지역 코드(pt-BR·fr-CA)는 기본어로 묶는다. */
+function normalizeLang(raw){
+  const tag = String(raw || '').toLowerCase().replace('_', '-').trim();
+  if (!tag) return 'en';
+  if (tag === 'zh' || tag === 'zh-cn' || tag === 'zh-hans' || tag === 'zh-sg' || tag === 'zh-my') return 'zh';
+  if (tag.indexOf('zh-') === 0) return 'zh-tw';          /* zh-tw · zh-hk · zh-mo · zh-hant */
+  if (Object.prototype.hasOwnProperty.call(BUILTIN_I18N, tag)) return tag;
+  const base = tag.split('-')[0];
+  return base || 'en';
+}
+
+function detectLang(){
+  let q = null;
+  try { q = (new URLSearchParams(location.search).get('lang') || '').trim(); } catch (e) { q = null; }
+  const raw = q || (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+  return normalizeLang(raw);
+}
+
+const LANG = detectLang();
+const IS_BUILTIN = Object.prototype.hasOwnProperty.call(BUILTIN_I18N, LANG);
+const IS_RTL = RTL_LANGS.indexOf(LANG.split('-')[0]) >= 0;
+const LOCALE = LOCALES[LANG] || LANG;
+const RT_CACHE_KEY = 'ajak_ui_i18n_' + LANG;
+
+/* 내장 사전이 없으면 우선 영어로 그려 두고, 번역이 오면 그 언어로 갈아 끼운다 */
+let S = IS_BUILTIN ? BUILTIN_I18N[LANG] : (BUILTIN_I18N.en || {});
+let rtApplied = false;
+
+/* 어떤 키가 빠져도 화면에 키 이름이 뜨지 않게 영어 → 한국어 순으로 받쳐 둔다 */
+const t = (k) => {
+  const v = Object.prototype.hasOwnProperty.call(S, k) ? S[k]
+    : Object.prototype.hasOwnProperty.call(BUILTIN_I18N.en || {}, k) ? BUILTIN_I18N.en[k]
+    : Object.prototype.hasOwnProperty.call(BUILTIN_I18N.ko || {}, k) ? BUILTIN_I18N.ko[k] : k;
+  return typeof v === 'string' ? v.replace(/\{MAX_MEDIA\}/g, MAX_MEDIA) : v;
+};
+
+/* index.html에 박아 둔 정적 문구를 지금 언어로 갈아 끼운다.
+   data-i18n(텍스트) · data-i18n-ph(placeholder) · data-i18n-aria(aria-label) */
+function applyStaticI18n(){
+  const html = document.documentElement;
+  if (html) {
+    html.setAttribute('lang', LANG === 'zh' ? 'zh-Hans' : LANG === 'zh-tw' ? 'zh-Hant' : LANG);
+    html.setAttribute('dir', IS_RTL ? 'rtl' : 'ltr');
+  }
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  $$('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
+  $$('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
+  const desc = t('metaDesc');
+  ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]'].forEach(sel => {
+    const m = document.querySelector(sel);
+    if (m) m.setAttribute('content', desc);
+  });
+}
+
+/* ---------- 내장 사전에 없는 언어: UI 문구 일괄 번역 ----------
+   한 번만 번역해 캐시한다. 앱의 '번역 보기'와 같은 Google Translate 공개 엔드포인트를 쓴다. */
+function rtCacheRead(){
+  if (IS_BUILTIN) return null;
+  try {
+    const raw = localStorage.getItem(RT_CACHE_KEY);
+    if (!raw) return null;
+    const j = JSON.parse(raw);
+    if (!j || j.v !== UI_I18N_VERSION || !j.d || typeof j.d !== 'object') return null;
+    const base = BUILTIN_I18N.en || {};
+    const miss = Object.keys(base).filter(k => !(k in j.d));
+    return miss.length ? null : j.d;
+  } catch (e) { return null; }
+}
+
+function rtCacheWrite(dict){
+  try { localStorage.setItem(RT_CACHE_KEY, JSON.stringify({ v: UI_I18N_VERSION, d: dict, ts: Date.now() })); }
+  catch (e) { /* 저장 실패해도 이번 방문엔 그대로 쓴다 */ }
+}
+
+/* 한 요청에 여러 문자열을 담아 번역한다(응답은 q 순서와 1:1) */
+async function trBatch(list, target){
+  const qs = list.map(s => 'q=' + encodeURIComponent(s)).join('&');
+  const url = 'https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl='
+    + encodeURIComponent(target) + '&' + qs;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('batch ' + res.status);
+  const j = await res.json();
+  const out = [];
+  if (Array.isArray(j)) {
+    j.forEach(x => {
+      if (typeof x === 'string') out.push(x);
+      else if (Array.isArray(x) && typeof x[0] === 'string') out.push(x[0]);
+      else if (x && typeof x.trans === 'string') out.push(x.trans);
+      else out.push(null);
+    });
+  } else if (j && typeof j === 'object') {
+    out.push(j.trans || j.translatedText || null);
+  }
+  return out;
+}
+
+async function rtTranslateDict(){
+  const base = BUILTIN_I18N.en || {};
+  const keys = Object.keys(base).filter(k => typeof base[k] === 'string');
+  const out = {};
+  const CHUNK = 8;
+  for (let i = 0; i < keys.length; i += CHUNK) {
+    const chunk = keys.slice(i, i + CHUNK);
+    let res = null;
+    try { res = await trBatch(chunk.map(k => base[k]), LANG); } catch (e) { res = null; }
+    chunk.forEach((k, j) => {
+      const r = res ? res[j] : null;
+      let v = (typeof r === 'string' && r.trim()) ? r : null;
+      /* 자리표시자가 사라진 번역은 버리고 영어 원문을 쓴다 */
+      if (v) {
+        ['{n}', '{MAX_MEDIA}'].forEach(tok => {
+          if (base[k].indexOf(tok) >= 0 && v.indexOf(tok) < 0) v = null;
+        });
+      }
+      out[k] = v || base[k];
+    });
+  }
+  const tags = Array.isArray(base.defaultTags) ? base.defaultTags : [];
+  if (tags.length) {
+    try {
+      const res = await trBatch(tags, LANG);
+      out.defaultTags = tags.map((x, i) => (res && typeof res[i] === 'string' && res[i].trim()) ? res[i] : x);
+    } catch (e) { out.defaultTags = tags.slice(); }
+  }
+  return out;
+}
+
+/* 캐시가 있으면 첫 화면 전에 바로 적용하고, 없으면 백그라운드로 번역해 두 번째 화면부터 그 언어 */
+function applyRuntimeDict(dict){
+  if (!dict) return;
+  S = dict;
+  rtApplied = true;
+  applyStaticI18n();
+  try { render(); } catch (e) {}
+  try { updateOnline(); } catch (e) {}
+}
+
+function loadRuntimeLang(){
+  if (IS_BUILTIN) return;
+  const cached = rtCacheRead();
+  if (cached) { S = cached; rtApplied = true; return; }
+  rtTranslateDict().then(dict => {
+    if (!dict) return;
+    rtCacheWrite(dict);
+    if (!rtApplied) applyRuntimeDict(dict);
+  }).catch(() => { /* 실패하면 영어로 둔다 */ });
+}
 
 /* ---------- utils ---------- */
 const $  = (s, r) => (r || document).querySelector(s);
@@ -91,22 +196,25 @@ const esc = (s) => String(s == null ? '' : s)
 
 const escAttr = (s) => esc(s).replace(/\n/g,' ');
 
+/* 첫 페인트 전에 지금 기기 언어로 정적 문구를 갈아 끼운다(스크립트가 body 끝이라 요소는 이미 있다) */
+try { applyStaticI18n(); } catch (e) {}
+
 const uid = () => 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
 
 function timeAgo(ts){
   const d = Date.now() - ts;
-  if (d < 60000) return '방금';
+  if (d < 60000) return t('now');
   const m = Math.floor(d / 60000);
-  if (m < 60) return m + '분 전';
+  if (m < 60) return t('minsAgo').replace('{n}', m);
   const h = Math.floor(m / 60);
-  if (h < 24) return h + '시간 전';
+  if (h < 24) return t('hoursAgo').replace('{n}', h);
   const day = Math.floor(h / 24);
-  if (day < 7) return day + '일 전';
+  if (day < 7) return t('daysAgo').replace('{n}', day);
   return fullDate(ts);
 }
 
 function fullDate(ts){
-  try { return new Date(ts).toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'long' }); }
+  try { return new Date(ts).toLocaleDateString(LOCALE, { year:'numeric', month:'long', day:'numeric', weekday:'long' }); }
   catch(e) { return new Date(ts).toDateString(); }
 }
 
@@ -195,7 +303,7 @@ function load(){
   if (!d || !Array.isArray(d.diaries)) {
     d = {
       v: 1,
-      me: { nick: '나', handle: '@me', bio: '', avatar: null },
+      me: { nick: t('meDefault'), handle: '@me', bio: '', avatar: null },
       diaries: [],
       filterTag: null, searchQuery: '', meTab: 'mine',
     };
@@ -204,9 +312,9 @@ function load(){
   if (typeof d.filterTag !== 'string') d.filterTag = null;
   if (typeof d.searchQuery !== 'string') d.searchQuery = '';
   if (d.meTab !== 'mine' && d.meTab !== 'likes') d.meTab = 'mine';
-  if (!d.me || typeof d.me !== 'object') d.me = { nick: '나', handle: '@me', bio: '', avatar: null };
+  if (!d.me || typeof d.me !== 'object') d.me = { nick: t('meDefault'), handle: '@me', bio: '', avatar: null };
   if (typeof d.me.handle !== 'string' || !d.me.handle) d.me.handle = '@me';
-  if (typeof d.me.nick !== 'string' || !d.me.nick) d.me.nick = '나';
+  if (typeof d.me.nick !== 'string' || !d.me.nick) d.me.nick = t('meDefault');
   if (typeof d.me.bio !== 'string') d.me.bio = '';
   if (d.me.avatar !== null && typeof d.me.avatar !== 'string') d.me.avatar = null;
   if (!Array.isArray(d.diaries)) d.diaries = [];
@@ -216,7 +324,7 @@ function load(){
 function save(d){
   try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
   catch(e) {
-    if (e && (e.name === 'QuotaExceededError' || e.code === 22)) toast('저장 공간이 부족해요 — 사진을 지워 주세요');
+    if (e && (e.name === 'QuotaExceededError' || e.code === 22)) toast(t('storageFull'));
   }
 }
 
@@ -597,7 +705,7 @@ function renderDraftMedia(){
     + (m.kind === 'video'
         ? '<video src="' + escAttr(m.url) + '" muted playsinline preload="metadata"></video><span class="thumb-play" aria-hidden="true">\u25b6</span>'
         : '<img src="' + escAttr(m.url) + '" alt="">')
-    + '<button type="button" class="rm" data-i="' + i + '" aria-label="삭제">\u2715</button></div>'
+    + '<button type="button" class="rm" data-i="' + i + '" aria-label="' + escAttr(t('del')) + '">\u2715</button></div>'
   )).join('');
 }
 
@@ -919,13 +1027,21 @@ function commentsHTML(p){
 }
 
 /* ---------- 번역 ----------
-   글마다 번역 보기/원문 보기로 전환한다. 한국어 글이면 영어로, 그 밖의 글이면
-   한국어로 옮긴다. 같은 글은 같은 언어로 두 번 보내지 않는다. */
+   글마다 번역 보기/원문 보기로 전환한다. 목적지는 접속자의 현재 UI 언어이고,
+   한국어 UI에서 한국어 글은 영어로 보여 준다. 같은 글은 같은 언어로 두 번 보내지 않는다. */
 let trState = {};
 const trCache = new Map();
 
-const TR_TARGET = { en:'en', ko:'ko', ja:'ja', zh:'zh-CN', es:'es' };
+/* 번역 목적지는 접속자의 현재 UI 언어다 (내장 15개 + 자동 번역 언어 모두). */
+const TR_TARGET = { ko:'ko', en:'en', ja:'ja', zh:'zh-CN', 'zh-tw':'zh-TW', es:'es', fr:'fr', de:'de',
+  pt:'pt', it:'it', ru:'ru', id:'id', vi:'vi', th:'th', ar:'ar' };
 const TR_LIBRE_TARGET = { en:'en', ko:'ko', ja:'ja', zh:'zh', es:'es' };
+
+/* 지금 UI 언어로 옮긴다. 한국어 UI에서 한국어 글은 (원래 동작대로) 영어로 보여 준다. */
+function trTargetFor(body){
+  if (hasHangul(body)) return LANG === 'ko' ? 'en' : LANG;
+  return LANG;
+}
 
 function hasHangul(s){ return /[\uAC00-\uD7A3]/.test(String(s || '')); }
 
@@ -1016,7 +1132,7 @@ async function startTranslate(p){
     if (cur.status === 'done') { delete trState[p.id]; render(); return; }
     if (cur.status === 'loading') return;
   }
-  const target = hasHangul(p.body) ? 'en' : 'ko';
+  const target = trTargetFor(p.body);
   const key = p.id + '|' + target;
   if (trCache.has(key)) {
     trState[p.id] = Object.assign({ lang: target, status: 'done' }, trCache.get(key));
@@ -1063,7 +1179,7 @@ function postHTML(p){
     +   '<button type="button" class="act" data-act="share" aria-label="' + escAttr(t('share')) + '">' + ICO.send + '</button>'
     +   (p.mine ? '<span class="post-tools">'
     +   '<button type="button" class="act" data-act="edit" aria-label="' + escAttr(t('edit')) + '" title="' + escAttr(t('edit')) + '">' + ICO.pencil + '</button>'
-    +   '<button type="button" class="act" data-act="delete" aria-label="삭제" title="삭제">' + ICO.trash + '</button>'
+    +   '<button type="button" class="act" data-act="delete" aria-label="' + escAttr(t('del')) + '" title="' + escAttr(t('del')) + '">' + ICO.trash + '</button>'
     +   '</span>' : '')
     + '</div>'
     + '<div class="comments"' + (openComments.has(p.id) ? '' : ' hidden') + '>'
@@ -1189,7 +1305,7 @@ function topTags(){
       m.set(tg, e);
     });
   });
-  if (!m.size) return DEFAULT_TAGS.map(tg => ({ tag: tg, label: tg, count: 0, fallback: true }));
+  if (!m.size) return (S.defaultTags || DEFAULT_TAGS).map(tg => ({ tag: tg, label: tg, count: 0, fallback: true }));
   return Array.from(m.values())
     .sort((a, b) => (b.count - a.count) || (b.last - a.last) || a.tag.localeCompare(b.tag))
     .slice(0, TOP_TAG_LIMIT);
@@ -1407,6 +1523,8 @@ function bind(){
 }
 
 function boot(){
+  loadRuntimeLang();   /* 내장 사전에 없는 언어: 캐시된 번역이 있으면 첫 화면 전에 적용한다 */
+  applyStaticI18n();
   load();
   bind();
   updateOnline();

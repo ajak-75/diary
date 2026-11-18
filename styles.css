@@ -472,3 +472,18 @@ svg { display: block; }
   .tabbar { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
   .sheet { border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
 }
+
+/* ---------- RTL (아랍어·히브리어·페르시아어 등) ----------
+   html[dir="rtl"]이면 flex/grid의 흐름과 아이콘 위치가 함께 뒤집힌다.
+   글자 정렬과 화살표만 손으로 맞춰 준다. */
+html[dir="rtl"] body { text-align: right; }
+html[dir="rtl"] .field-note { text-align: left; }
+html[dir="rtl"] .search-input,
+html[dir="rtl"] .body-input,
+html[dir="rtl"] .tag-input,
+html[dir="rtl"] .field-input,
+html[dir="rtl"] .comment-input { text-align: right; }
+html[dir="rtl"] .promise-row-go { transform: scaleX(-1); }
+html[dir="rtl"] .translate-row { direction: rtl; }
+html[dir="rtl"] .post-actions { direction: rtl; }
+html[dir="rtl"] .byline-time { direction: rtl; }

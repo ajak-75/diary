@@ -1,10 +1,11 @@
 /* Ajak — service worker (offline-first shell) */
-const CACHE = 'diary-v2';
+const CACHE = 'diary-v3';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './i18n.js',
   './manifest.webmanifest',
   './icons/avatar-default.svg',
   './icons/favicon-32.png',
