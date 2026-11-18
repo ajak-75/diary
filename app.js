@@ -1119,6 +1119,7 @@ function renderMain(){
     if (si) {
       si.addEventListener('input', () => {
         state.searchQuery = si.value;
+        state.filterTag = null;   /* 글자로 찾기 시작하면 태그 필터는 풀린다 */
         save(state);
         const box = $('#searchResults');
         if (box) box.innerHTML = searchResultsHTML();
