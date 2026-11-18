@@ -9,23 +9,13 @@
 <meta name="color-scheme" content="light">
 <meta name="format-detection" content="telephone=no">
 
-<script>
-/* 기기 언어를 가장 먼저 읽어 html lang·dir 만 잡아 둔다(문구는 app.js가 갈아 끼운다).
-   잠깐이라도 한국어 화면이 번쩍이지 않도록 첫 페인트 전에 방향과 언어를 정한다. */
-(function () {
-  try {
-    var q = (new URLSearchParams(location.search).get('lang') || '').toLowerCase().replace('_', '-');
-    var raw = q || (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
-    var l = String(raw).toLowerCase().replace('_', '-');
-    var base = l.split('-')[0];
-    var shown = base;
-    if (base === 'zh') shown = (l === 'zh' || l === 'zh-cn' || l === 'zh-hans' || l === 'zh-sg') ? 'zh-Hans' : 'zh-Hant';
-    document.documentElement.setAttribute('lang', shown);
-    var RTL = ['ar', 'he', 'fa', 'ur', 'yi', 'dv', 'ps', 'ckb', 'sd', 'ug'];
-    document.documentElement.setAttribute('dir', RTL.indexOf(base) >= 0 ? 'rtl' : 'ltr');
-  } catch (e) {}
-})();
-</script>
+<!-- 보안: Referer에는 출처만 남기고, 페이지는 자기 파일·자기 사진/영상·번역 API 외에는
+     아무것도 불러오지 못한다(인라인 스크립트 금지 = script-src 'self'). -->
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self'; connect-src 'self' data: blob: https://translate.googleapis.com https://clients5.google.com https://translate.astian.org; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+
+<!-- 기기 언어를 첫 페인트 전에 적용한다(파일로 분리해 CSP의 인라인 스크립트 금지를 지킨다) -->
+<script src="./boot.js?v=1"></script>
 
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/favicon-32.png?v=3" sizes="32x32" type="image/png">
@@ -48,7 +38,7 @@
 <meta name="twitter:description" content="일상과 생각을 가볍게 나누는 공간.">
 <meta name="twitter:image" content="https://ajak-75.github.io/diary/icons/og-cover.jpg">
 
-<link rel="stylesheet" href="./styles.css?v=5">
+<link rel="stylesheet" href="./styles.css?v=6">
 </head>
 <body>
 <div class="app" id="app">
@@ -183,7 +173,7 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="./i18n.js?v=4"></script>
-<script src="./app.js?v=11"></script>
+<script src="./i18n.js?v=5"></script>
+<script src="./app.js?v=12"></script>
 </body>
 </html>

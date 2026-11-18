@@ -207,6 +207,20 @@ const esc = (s) => String(s == null ? '' : s)
 
 const escAttr = (s) => esc(s).replace(/\n/g,' ');
 
+/* 저장된 값은 안전한 스킴일 때만 화면에 올린다. 사진·영상은 이 앱의 파일·object URL·
+   인라인 이미지뿐이다. localStorage에 javascript:나 data:text/html이 들어 있어도 실행되지 않는다. */
+function safeSrc(s){
+  const v = String(s == null ? '' : s).trim();
+  if (!v) return '';
+  if (/^(?:https?:\/\/|blob:|data:(?:image|video)\/(?:png|jpe?g|gif|webp|avif|bmp|svg\+xml|mp4|webm|quicktime|3gpp))/i.test(v)) return v;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return '';   /* 그 밖의 스킴은 거부 */
+  return v;                                        /* 상대 경로 */
+}
+
+/* 사진은 래스터 이미지만: SVG는 스크립트를 품을 수 있어 고를 때 거부한다
+   (사진은 어차피 JPEG으로 다시 인코딩해 보관한다). */
+const isRasterImage = (type) => /^image\//i.test(String(type || '')) && !/svg|xml/i.test(String(type || ''));
+
 /* 첫 페인트 전에 지금 기기 언어로 정적 문구를 갈아 끼운다(스크립트가 body 끝이라 요소는 이미 있다) */
 try { applyStaticI18n(); } catch (e) {}
 
@@ -547,7 +561,7 @@ async function squareAvatarDataURL(file){
 
 function setProfilePhotoPreview(url){
   const img = $('#profilePhotoImg');
-  if (img) img.src = url || AVATAR_DEFAULT;
+  if (img) img.src = safeSrc(url) || AVATAR_DEFAULT;
 }
 
 function syncProfileCounters(){
@@ -587,7 +601,7 @@ function openProfileSheet(){
 
 async function onProfilePhotoPick(file){
   if (!file) return;
-  if (!/^image\//.test(file.type || '')) { toast(t('profilePhotoBad')); return; }
+  if (!isRasterImage(file.type)) { toast(t('profilePhotoBad')); return; }
   try {
     const dataUrl = await squareAvatarDataURL(file);
     if (!dataUrl) throw new Error('encode');
@@ -754,8 +768,8 @@ function videoSeconds(file){
 async function addMediaFiles(files){
   for (const f of Array.from(files || [])) {
     if (draftMedia.length >= MAX_MEDIA) { toast(t('tooManyPhotos')); break; }
-    const isImage = /^image\//.test(f.type);
-    const isVideo = /^video\//.test(f.type);
+    const isImage = isRasterImage(f.type);
+    const isVideo = /^video\//.test(f.type || '');
     if (!isImage && !isVideo) continue;
     if (isVideo && f.size > MAX_VIDEO_BYTES) { toast(t('videoTooBig')); continue; }
     try {
@@ -970,19 +984,20 @@ function isMeWriter(p){
 }
 
 function profileAvatarSrc(){
-  return (state && state.me && typeof state.me.avatar === 'string' && state.me.avatar) ? state.me.avatar : AVATAR_DEFAULT;
+  const own = (state && state.me && typeof state.me.avatar === 'string' && state.me.avatar) ? safeSrc(state.me.avatar) : '';
+  return own || AVATAR_DEFAULT;
 }
 
 function avatarHTML(p, size){
   const cls = 'avatar-' + size;
-  const src = isMeWriter(p) ? profileAvatarSrc() : (p.avatar || '');
+  const src = safeSrc(isMeWriter(p) ? profileAvatarSrc() : (p.avatar || ''));
   if (src) return '<img class="avatar ' + cls + '" src="' + escAttr(src) + '" alt="" width="' + size + '" height="' + size + '">';
   const letter = (p.nick || '?').trim().charAt(0);
   return '<span class="avatar-fallback ' + cls + '" aria-hidden="true">' + esc(letter) + '</span>';
 }
 
 function tagChipHTML(tag, count, label){
-  const n = count ? '<b class="chip-n">' + count + '</b>' : '';
+  const n = count ? '<b class="chip-n">' + esc(count) + '</b>' : '';
   return '<button type="button" class="chip" data-tag="' + escAttr(tag) + '">#' + esc(label || tag) + n + '</button>';
 }
 
@@ -1007,13 +1022,14 @@ function mediaHTML(p){
   const vids = items.filter(x => x.kind === 'video').length;
   let inner = '';
   items.forEach((it, i) => {
+    const src = safeSrc(it.url);
     if (it.kind === 'video') {
-      inner += it.url
-        ? '<video class="ph-video" src="' + escAttr(it.url) + '" controls playsinline webkit-playsinline preload="metadata" data-video="' + i + '"></video>'
+      inner += src
+        ? '<video class="ph-video" src="' + escAttr(src) + '" controls playsinline webkit-playsinline preload="metadata" data-video="' + i + '"></video>'
         : '<div class="ph-skel ph-video-skel"><span>\u25b6</span></div>';
     } else {
-      inner += it.url
-        ? '<img src="' + escAttr(it.url) + '" alt="" loading="lazy" data-photo="' + i + '">'
+      inner += src
+        ? '<img src="' + escAttr(src) + '" alt="" loading="lazy" data-photo="' + i + '">'
         : '<div class="ph-skel"></div>';
     }
   });
@@ -1174,7 +1190,7 @@ function postHTML(p){
     +     '<div class="byline">'
     +       '<span class="byline-name">' + esc(p.nick) + '</span>'
     +       '<span class="dot">\u00b7</span>'
-    +       '<span class="byline-time" data-ts="' + p.ts + '">' + timeAgo(p.ts) + '</span>'
+    +       '<span class="byline-time" data-ts="' + escAttr(p.ts) + '">' + timeAgo(p.ts) + '</span>'
     +       (p.editedAt ? '<span class="edited-mark">' + esc(t('edited')) + '</span>' : '')
     +     '</div>'
     +     '<p class="post-body">' + esc(p.body) + '</p>'
@@ -1430,7 +1446,9 @@ function onMainSubmit(e){
 }
 
 function openViewer(src){
-  $('#viewerImg').src = src;
+  const url = safeSrc(src);
+  if (!url) return;
+  $('#viewerImg').src = url;
   $('#viewer').hidden = false;
 }
 function closeViewer(){ $('#viewer').hidden = true; $('#viewerImg').src = ''; }
