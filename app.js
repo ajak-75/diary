@@ -29,7 +29,7 @@ const AVATAR_DEFAULT = './icons/avatar-default.svg';
      localStorage('ajak_ui_i18n_{lang}')에 캐시하고 그대로 쓴다. 번역이 실패하면 영어로 받쳐 둔다.
    · 브랜드 'Ajak'은 어느 언어에서도 영문 그대로 둔다. {MAX_MEDIA}·{n}은 런타임에 채운다. */
 const BUILTIN_I18N = (typeof window !== 'undefined' && window.AJAK_I18N) || {};
-const UI_I18N_VERSION = '2026-11-18';
+const UI_I18N_VERSION = '2026-11-18.2';
 const RTL_LANGS = ['ar', 'he', 'fa', 'ur', 'yi', 'dv', 'ps', 'ckb', 'sd', 'ug'];
 
 const LOCALES = {
